@@ -222,7 +222,8 @@ th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: lef
 .swipe-track {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(15, 157, 139, 0.2), rgba(15, 157, 139, 0.5));
+  background:
+    linear-gradient(90deg, rgba(217, 74, 99, 0.45) 0%, rgba(217, 74, 99, 0.15) 34%, transparent 34%, transparent 66%, rgba(15, 157, 139, 0.15) 66%, rgba(15, 157, 139, 0.5) 100%);
 }
 
 .swipe-card-content {

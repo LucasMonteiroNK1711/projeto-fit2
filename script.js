@@ -466,7 +466,7 @@ function renderTodayWorkout() {
               <label>Carga (kg)
                 <input type="number" step="0.5" value="${escapeAttribute(sessionEntry.load)}" data-load-day="${today}" data-load-index="${index}" />
               </label>
-              <span class="swipe-hint">${completed ? 'Exercício finalizado.' : 'Arraste para a direita para marcar 1 série.'}</span>
+              <span class="swipe-hint">${completedSets > 0 ? 'Direita conclui 1 série. Esquerda desfaz 1 série.' : 'Arraste para a direita para marcar 1 série.'}</span>
             </div>
           </div>
         </article>
@@ -655,6 +655,25 @@ function advanceWorkoutSet(day, index) {
   renderTodayWorkout();
 }
 
+function undoWorkoutSet(day, index) {
+  const workout = state.workouts[day]?.[index];
+  if (!workout) return;
+
+  const workoutKey = `${day}-${index}`;
+  const session = ensureTodaySession();
+  const current = getSessionEntry(day, index, workout);
+  const nextCompletedSets = Math.max(current.completedSets - 1, 0);
+
+  session[workoutKey] = {
+    load: current.load,
+    completedSets: nextCompletedSets,
+    totalSets: current.totalSets,
+  };
+
+  saveState();
+  renderTodayWorkout();
+}
+
 function clearSessionEntryForWorkout(day, removedIndex) {
   Object.values(state.workoutSessions).forEach((session) => {
     if (!session) return;
@@ -699,8 +718,9 @@ function attachSwipeGesture(card, day, index) {
 
   card.addEventListener('pointermove', (event) => {
     if (!dragging) return;
-    const deltaX = Math.max(0, event.clientX - startX);
-    card.style.setProperty('--swipe-x', `${Math.min(deltaX, 140)}px`);
+    const deltaX = event.clientX - startX;
+    const clamped = Math.max(-140, Math.min(deltaX, 140));
+    card.style.setProperty('--swipe-x', `${clamped}px`);
   });
 
   card.addEventListener('pointerup', (event) => {
@@ -715,6 +735,14 @@ function attachSwipeGesture(card, day, index) {
       card.style.setProperty('--swipe-x', '140px');
       window.setTimeout(() => {
         advanceWorkoutSet(day, index);
+      }, 140);
+      return;
+    }
+
+    if (deltaX < -90) {
+      card.style.setProperty('--swipe-x', '-140px');
+      window.setTimeout(() => {
+        undoWorkoutSet(day, index);
       }, 140);
       return;
     }
