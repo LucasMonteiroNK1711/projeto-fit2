@@ -85,7 +85,8 @@ body {
   overflow: hidden;
 }
 
-.card h2 { margin: 0 0 10px; font-size: 1rem; }
+.card h2,
+.library-group-header h3 { margin: 0; }
 canvas { width: 100%; display: block; max-width: 100%; }
 
 .gauge-wrap { display: grid; place-items: center; position: relative; }
@@ -152,9 +153,17 @@ canvas { width: 100%; display: block; max-width: 100%; }
 
 .nav-btn.active { background: var(--primary-soft); color: var(--primary); }
 
-.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-label { font-size: 0.85rem; color: var(--muted); display: grid; gap: 4px; }
-input, select {
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; align-items: end; }
+label,
+.group-selector-wrap {
+  font-size: 0.85rem;
+  color: var(--muted);
+  display: grid;
+  gap: 4px;
+}
+
+input,
+select {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px;
@@ -163,6 +172,7 @@ input, select {
   color: var(--text);
 }
 
+.field-label { font-size: 0.85rem; color: var(--muted); }
 .muted { color: var(--muted); }
 .table-wrap { overflow: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -188,7 +198,65 @@ th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: lef
   cursor: pointer;
 }
 
-.library-list { display: grid; gap: 8px; }
+.group-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.group-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.group-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.group-chip span {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.group-chip input:checked + span {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.library-list { display: grid; gap: 12px; }
+.library-group {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.library-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.library-group-header span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.library-group-list { display: grid; gap: 8px; }
 
 .library-item {
   border: 1px solid var(--line);
@@ -206,6 +274,7 @@ th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: lef
 .workout-plan-grid { display: grid; gap: 8px; margin-top: 10px; }
 .workout-day-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
 .workout-day-card summary { cursor: pointer; font-weight: 600; }
+.day-groups { margin: 10px 0 12px; }
 
 #todayWorkoutList { display: grid; gap: 12px; }
 
@@ -302,25 +371,47 @@ th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: lef
 
 .progress-label { color: var(--muted); font-size: 0.85rem; }
 
-.workout-card-footer label {
-  min-width: 120px;
-  color: var(--muted);
+.set-load-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
 }
 
-.workout-card-footer input { width: 100%; }
+.set-load-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(15, 157, 139, 0.03);
+}
+
+.set-load-item.done {
+  border-color: rgba(15, 157, 139, 0.35);
+  background: rgba(15, 157, 139, 0.08);
+}
+
+.set-load-item span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.set-load-item input {
+  width: 100%;
+  margin-top: 8px;
+}
 
 .swipe-hint {
   color: var(--muted);
   font-size: 0.85rem;
   line-height: 1.5;
-  max-width: 240px;
+  max-width: 260px;
 }
 
 dialog { border: none; border-radius: 16px; width: min(680px, 95%); }
 #workoutManagerModal { width: min(980px, 96%); }
 .modal-manager { display: grid; gap: 12px; max-height: 80vh; overflow: auto; }
 dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
-.modal-manager, .modal-form { color: var(--text); }
+.modal-manager,
+.modal-form { color: var(--text); }
 .modal-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .modal-form h3 { grid-column: 1 / -1; margin: 0; }
 .actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
@@ -329,7 +420,8 @@ footer { text-align: center; color: var(--muted); padding: 10px 0 26px; }
 @media (max-width: 680px) {
   .workout-card-header,
   .workout-card-footer,
-  .library-item {
+  .library-item,
+  .library-group-header {
     flex-direction: column;
     align-items: stretch;
   }
