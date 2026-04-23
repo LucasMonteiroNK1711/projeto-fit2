@@ -709,7 +709,7 @@ function attachSwipeGesture(card, day, index) {
   };
 
   card.addEventListener('pointerdown', (event) => {
-    if (event.target.closest('input, button, select, label')) return;
+    if (event.target.closest('input, button, select')) return;
     startX = event.clientX;
     dragging = true;
     card.classList.add('dragging');
