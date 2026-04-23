@@ -61,6 +61,7 @@
               <button class="btn" id="openWorkoutManager">Gerenciar treinos</button>
             </div>
             <p class="muted" id="todayWorkoutLabel">Carregando...</p>
+            <p class="muted workout-tip">Arraste o card para a direita para concluir uma série. Ao completar todas, o exercício fica concluído.</p>
             <div id="todayWorkoutList"></div>
           </div>
         </section>
@@ -100,7 +101,7 @@
       </nav>
     </div>
 
-    <footer>Lucas Monteiro© 2026</footer>
+    <footer>Lucas Monteiro © 2026</footer>
 
     <dialog id="measureModal">
       <form id="measureForm" method="dialog" class="modal-form">
@@ -130,8 +131,6 @@
         </div>
       </form>
     </dialog>
-
-
 
     <dialog id="workoutManagerModal">
       <div class="modal-manager">
@@ -174,6 +173,9 @@
             </label>
             <label>Repetições
               <input name="reps" placeholder="4x12" required />
+            </label>
+            <label>Carga padrão (kg)
+              <input name="load" type="number" step="0.5" placeholder="20" />
             </label>
             <button type="submit" class="btn" id="saveWorkoutBtn">Adicionar exercício</button>
           </form>
