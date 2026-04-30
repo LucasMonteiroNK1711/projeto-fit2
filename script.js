@@ -55,6 +55,10 @@ const dom = {
   weekSummary: document.getElementById('weekSummary'),
   todayWorkoutLabel: document.getElementById('todayWorkoutLabel'),
   todayWorkoutList: document.getElementById('todayWorkoutList'),
+  dashboardAiBtn: document.getElementById('dashboardAiBtn'),
+  dashboardAiInsight: document.getElementById('dashboardAiInsight'),
+  workoutAiBtn: document.getElementById('workoutAiBtn'),
+  workoutAiInsight: document.getElementById('workoutAiInsight'),
   themeToggle: document.getElementById('themeToggle'),
 };
 
@@ -155,6 +159,8 @@ function bindEvents() {
   dom.measureForm.addEventListener('submit', onMeasureSubmit);
   dom.exerciseForm.addEventListener('submit', onExerciseSubmit);
   dom.workoutGeneratorForm.addEventListener('submit', onWorkoutGeneratorSubmit);
+  dom.dashboardAiBtn?.addEventListener('click', () => requestAiInsight('dashboard'));
+  dom.workoutAiBtn?.addEventListener('click', () => requestAiInsight('workout'));
 }
 
 function initTheme() {
@@ -337,6 +343,115 @@ function refreshAll() {
   renderMeasuresTable();
   renderDashboard();
   refreshWorkoutArea();
+}
+
+async function requestAiInsight(scope) {
+  const isDashboard = scope === 'dashboard';
+  const output = isDashboard ? dom.dashboardAiInsight : dom.workoutAiInsight;
+  const button = isDashboard ? dom.dashboardAiBtn : dom.workoutAiBtn;
+  if (!output || !button) return;
+
+  output.classList.add('muted');
+  output.textContent = 'IA analisando seus dados...';
+  button.disabled = true;
+
+  try {
+    const response = await fetch('/api/ai-insights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scope,
+        dashboard: buildDashboardAiPayload(),
+        workout: buildWorkoutAiPayload(),
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'Não foi possível gerar os insights agora.');
+
+    output.classList.remove('muted');
+    output.innerHTML = formatAiInsight(payload.insight);
+  } catch (error) {
+    output.classList.add('muted');
+    output.textContent = `${error.message} Verifique se o servidor está rodando com OPENAI_API_KEY.`;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function buildDashboardAiPayload() {
+  const latest = state.measures.at(-1) || {};
+  const previous = state.measures.at(-2) || {};
+  const fat = navyBodyFat(latest);
+  const previousFat = navyBodyFat(previous);
+  const bmi = latest.weight && latest.height ? latest.weight / ((latest.height / 100) ** 2) : null;
+  const lean = latest.weight && fat != null ? latest.weight * (1 - fat / 100) : null;
+
+  return {
+    latestMeasure: latest,
+    previousMeasure: previous,
+    calculated: {
+      bodyFatPercent: fat,
+      previousBodyFatPercent: previousFat,
+      bmi: bmi ? Number(bmi.toFixed(1)) : null,
+      leanMassKg: lean ? Number(lean.toFixed(1)) : null,
+      bodyFatClass: classifyFat(fat),
+    },
+    measureHistory: state.measures.slice(-8),
+  };
+}
+
+function buildWorkoutAiPayload() {
+  const today = new Date().getDay();
+  const workout = state.workouts[today] || { groups: [], exercises: [] };
+  const exercises = (workout.exercises || []).map((item, index) => {
+    const session = getSessionEntry(today, index, item);
+    return {
+      exercise: item.exercise,
+      group: item.group,
+      plannedReps: item.reps,
+      plannedLoadsKg: item.setLoads,
+      completedSets: session.completedSets,
+      totalSets: session.totalSets,
+      actualLoadsKg: session.setLoads,
+      actualReps: session.actualReps,
+    };
+  });
+
+  return {
+    date: todaySessionKey(),
+    day: dayName(today),
+    groups: workout.groups || [],
+    exercises,
+    recentSessions: Object.entries(state.workoutSessions)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .slice(0, 6)
+      .map(([date, session]) => ({ date, session })),
+  };
+}
+
+function formatAiInsight(text) {
+  const lines = String(text || '').split('\n').map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) return '<p>Sem resposta da IA.</p>';
+  const blocks = [];
+  let list = [];
+
+  lines.forEach((line) => {
+    const isListItem = /^\d+\./.test(line) || /^[-*]\s*/.test(line);
+    if (isListItem) {
+      list.push(`<li>${escapeHtml(line.replace(/^(\d+\.|[-*])\s*/, ''))}</li>`);
+      return;
+    }
+
+    if (list.length) {
+      blocks.push(`<ul>${list.join('')}</ul>`);
+      list = [];
+    }
+    blocks.push(`<p>${escapeHtml(line)}</p>`);
+  });
+
+  if (list.length) blocks.push(`<ul>${list.join('')}</ul>`);
+  return blocks.join('');
 }
 
 function refreshWorkoutArea() {
@@ -610,7 +725,7 @@ function renderTodayWorkout() {
         </div>
       </article>
     `;
-  }).join('') + renderWorkoutFeedback(today, exercises);
+  }).join('');
 
   dom.todayWorkoutList.querySelectorAll('[data-set-load-day]').forEach((input) => {
     input.addEventListener('change', () => {

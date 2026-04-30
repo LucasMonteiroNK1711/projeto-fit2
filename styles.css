@@ -486,6 +486,44 @@ th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: lef
   color: var(--muted);
 }
 
+.ai-remote-card {
+  display: grid;
+  gap: 12px;
+}
+
+.treino-ai-panel {
+  border: 1px solid rgba(15, 157, 139, 0.24);
+  border-radius: 14px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(15, 157, 139, 0.08), var(--card));
+}
+
+.ai-remote-output {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(15, 157, 139, 0.04);
+  line-height: 1.45;
+}
+
+.ai-remote-output p {
+  margin: 0 0 8px;
+}
+
+.ai-remote-output p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-remote-output ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .swipe-hint {
   color: var(--muted);
   font-size: 0.85rem;
