@@ -548,6 +548,8 @@ function renderTodayWorkout() {
     const completedSets = Math.min(sessionEntry.completedSets, totalSets);
     const progress = totalSets ? Math.round((completedSets / totalSets) * 100) : 0;
     const completed = completedSets >= totalSets;
+    const activeSetIndex = Math.min(completedSets, Math.max(totalSets - 1, 0));
+    const activeLoad = sessionEntry.setLoads[activeSetIndex] ?? '';
 
     return `
       <article class="swipe-workout-card ${completed ? 'completed' : ''}" data-swipe-card="${today}-${index}">
@@ -567,13 +569,15 @@ function renderTodayWorkout() {
             </div>
             <span class="progress-label">${completed ? 'Exercício concluído' : `Faltam ${Math.max(totalSets - completedSets, 0)} séries`}</span>
           </div>
-          <div class="set-load-grid">
-            ${sessionEntry.setLoads.map((load, setIndex) => `
-              <label class="set-load-item ${setIndex < completedSets ? 'done' : ''}">
-                <span>Série ${setIndex + 1}</span>
-                <input type="number" step="0.5" value="${escapeAttribute(load)}" data-set-load-day="${today}" data-set-load-index="${index}" data-set-load-set="${setIndex}" />
-              </label>
-            `).join('')}
+          <div class="active-set-load">
+            <div>
+              <span>${completed ? 'Última série' : `Série ${activeSetIndex + 1} de ${totalSets}`}</span>
+              <strong>Peso sugerido</strong>
+            </div>
+            <label>
+              <input type="number" step="0.5" value="${escapeAttribute(activeLoad)}" data-set-load-day="${today}" data-set-load-index="${index}" data-set-load-set="${activeSetIndex}" />
+              <span>kg</span>
+            </label>
           </div>
           <div class="workout-card-footer">
             <span class="swipe-hint">Direita conclui 1 série. Esquerda desfaz 1 série.</span>
