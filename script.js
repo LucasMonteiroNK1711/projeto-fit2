@@ -309,10 +309,28 @@ function ensureLoadCount(loads, setCount) {
   return normalized.slice(0, target);
 }
 
+function ensureRepsCount(reps, setCount, fallback) {
+  const target = Math.max(setCount, 1);
+  const normalized = [...(reps || [])].map((item) => Number(item) || fallback);
+
+  while (normalized.length < target) {
+    normalized.push(fallback);
+  }
+
+  return normalized.slice(0, target);
+}
+
 function parseWorkoutReps(reps) {
   const match = String(reps || '').trim().match(/^(\d+)\s*x\s*(.+)$/i);
   if (!match) return { sets: 1, detail: String(reps || '').trim() || 'Execução livre' };
   return { sets: Number(match[1]), detail: match[2].trim() };
+}
+
+function estimateTargetReps(reps) {
+  const detail = parseWorkoutReps(reps).detail;
+  const numbers = String(detail).match(/\d+/g)?.map(Number).filter(Boolean) || [];
+  if (!numbers.length) return 10;
+  return Math.round(numbers.reduce((total, value) => total + value, 0) / numbers.length);
 }
 
 function refreshAll() {
@@ -550,6 +568,7 @@ function renderTodayWorkout() {
     const completed = completedSets >= totalSets;
     const activeSetIndex = Math.min(completedSets, Math.max(totalSets - 1, 0));
     const activeLoad = sessionEntry.setLoads[activeSetIndex] ?? '';
+    const activeReps = sessionEntry.actualReps[activeSetIndex] || estimateTargetReps(item.reps);
 
     return `
       <article class="swipe-workout-card ${completed ? 'completed' : ''}" data-swipe-card="${today}-${index}">
@@ -572,12 +591,18 @@ function renderTodayWorkout() {
           <div class="active-set-load">
             <div>
               <span>${completed ? 'Última série' : `Série ${activeSetIndex + 1} de ${totalSets}`}</span>
-              <strong>Peso sugerido</strong>
+              <strong>Registro da série</strong>
             </div>
-            <label>
-              <input type="number" step="0.5" value="${escapeAttribute(activeLoad)}" data-set-load-day="${today}" data-set-load-index="${index}" data-set-load-set="${activeSetIndex}" />
-              <span>kg</span>
-            </label>
+            <div class="set-entry-fields">
+              <label>
+                <input type="number" step="0.5" value="${escapeAttribute(activeLoad)}" data-set-load-day="${today}" data-set-load-index="${index}" data-set-load-set="${activeSetIndex}" />
+                <span>kg</span>
+              </label>
+              <label>
+                <input type="number" step="1" min="0" value="${escapeAttribute(activeReps)}" data-set-reps-day="${today}" data-set-reps-index="${index}" data-set-reps-set="${activeSetIndex}" />
+                <span>reps</span>
+              </label>
+            </div>
           </div>
           <div class="workout-card-footer">
             <span class="swipe-hint">Direita conclui 1 série. Esquerda desfaz 1 série.</span>
@@ -585,7 +610,7 @@ function renderTodayWorkout() {
         </div>
       </article>
     `;
-  }).join('');
+  }).join('') + renderWorkoutFeedback(today, exercises);
 
   dom.todayWorkoutList.querySelectorAll('[data-set-load-day]').forEach((input) => {
     input.addEventListener('change', () => {
@@ -598,10 +623,155 @@ function renderTodayWorkout() {
     });
   });
 
+  dom.todayWorkoutList.querySelectorAll('[data-set-reps-day]').forEach((input) => {
+    input.addEventListener('change', () => {
+      updateWorkoutSetReps(
+        Number(input.dataset.setRepsDay),
+        Number(input.dataset.setRepsIndex),
+        Number(input.dataset.setRepsSet),
+        input.value,
+      );
+    });
+  });
+
   dom.todayWorkoutList.querySelectorAll('[data-swipe-card]').forEach((card) => {
     const [day, index] = card.dataset.swipeCard.split('-').map(Number);
     attachSwipeGesture(card, day, index);
   });
+}
+
+function renderWorkoutFeedback(day, exercises) {
+  const entries = exercises.map((item, index) => ({
+    item,
+    session: getSessionEntry(day, index, item),
+    targetReps: estimateTargetReps(item.reps),
+  }));
+  const totalSets = entries.reduce((total, entry) => total + entry.session.totalSets, 0);
+  const completedSets = entries.reduce((total, entry) => total + Math.min(entry.session.completedSets, entry.session.totalSets), 0);
+
+  if (!entries.length || completedSets < totalSets) return '';
+
+  const analysis = analyzeWorkoutSession(entries);
+  const highlights = analysis.highlights.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+  const suggestions = analysis.suggestions.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+
+  return `
+    <section class="ai-feedback-card">
+      <div class="ai-feedback-header">
+        <span class="chip">IA local</span>
+        <strong>Feedback do treino concluído</strong>
+      </div>
+      <div class="ai-feedback-stats">
+        <span><strong>${analysis.totalVolume.toLocaleString('pt-BR')}</strong> kg movidos</span>
+        <span><strong>${analysis.averageReps}</strong> reps/série</span>
+        <span><strong>${analysis.averageLoad}</strong> kg médios</span>
+      </div>
+      <p>${escapeHtml(analysis.summary)}</p>
+      <div class="ai-feedback-grid">
+        <div>
+          <h3>Pontos fortes</h3>
+          <ul>${highlights}</ul>
+        </div>
+        <div>
+          <h3>Próximo treino</h3>
+          <ul>${suggestions}</ul>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function analyzeWorkoutSession(entries) {
+  const exerciseStats = entries.map(({ item, session, targetReps }) => {
+    const completedCount = Math.min(session.completedSets, session.totalSets);
+    const loads = session.setLoads.slice(0, completedCount).map(Number).map((value) => (Number.isFinite(value) ? value : 0));
+    const reps = session.actualReps.slice(0, completedCount).map(Number).map((value) => (Number.isFinite(value) ? value : targetReps));
+    const volume = loads.reduce((total, load, index) => total + (load * (reps[index] || targetReps)), 0);
+    const averageLoad = loads.length ? loads.reduce((total, load) => total + load, 0) / loads.length : 0;
+    const averageReps = reps.length ? reps.reduce((total, rep) => total + rep, 0) / reps.length : targetReps;
+    const firstLoad = loads.find((load) => load > 0) || 0;
+    const lastLoad = [...loads].reverse().find((load) => load > 0) || firstLoad;
+    const previous = findPreviousExerciseSession(item);
+
+    return {
+      name: item.exercise,
+      targetReps,
+      completedCount,
+      volume,
+      averageLoad,
+      averageReps,
+      firstLoad,
+      lastLoad,
+      previousVolume: previous?.volume || 0,
+    };
+  });
+
+  const totalVolume = Math.round(exerciseStats.reduce((total, item) => total + item.volume, 0));
+  const totalCompletedSets = exerciseStats.reduce((total, item) => total + item.completedCount, 0) || 1;
+  const averageLoad = exerciseStats.reduce((total, item) => total + (item.averageLoad * item.completedCount), 0) / totalCompletedSets;
+  const averageReps = exerciseStats.reduce((total, item) => total + (item.averageReps * item.completedCount), 0) / totalCompletedSets;
+  const previousVolume = exerciseStats.reduce((total, item) => total + item.previousVolume, 0);
+  const topExercise = [...exerciseStats].sort((a, b) => b.volume - a.volume)[0];
+  const readyToProgress = exerciseStats.filter((item) => item.averageLoad > 0 && item.averageReps >= item.targetReps && item.lastLoad >= item.firstLoad);
+  const needsControl = exerciseStats.filter((item) => item.averageReps < item.targetReps || (item.firstLoad && item.lastLoad < item.firstLoad * 0.9));
+  const variation = previousVolume ? ((totalVolume - previousVolume) / previousVolume) * 100 : null;
+
+  const summary = variation == null
+    ? `Treino fechado com boa base de dados. A partir de agora consigo comparar seus próximos resultados com este treino.`
+    : variation >= 3
+      ? `Você evoluiu ${variation.toFixed(1)}% em volume comparado ao último registro desses exercícios.`
+      : variation <= -3
+        ? `O volume ficou ${Math.abs(variation).toFixed(1)}% abaixo do último registro. Pode ter sido fadiga, ajuste de carga ou uma sessão mais técnica.`
+        : `Volume praticamente estável em relação ao último registro, com variação de ${variation.toFixed(1)}%.`;
+
+  const highlights = [
+    `${totalCompletedSets} séries concluídas sem deixar exercício pela metade.`,
+    topExercise ? `${topExercise.name} concentrou o maior volume do treino.` : 'Treino registrado com dados suficientes para acompanhar evolução.',
+  ];
+
+  if (readyToProgress.length) {
+    highlights.push(`${readyToProgress.length} exercício(s) bateram a meta de reps mantendo ou subindo a carga.`);
+  }
+
+  const suggestions = [];
+  if (readyToProgress.length) {
+    suggestions.push(`No próximo treino, tente subir 2,5% a 5% em ${readyToProgress[0].name}, mantendo a execução limpa.`);
+  }
+  if (needsControl.length) {
+    suggestions.push(`Em ${needsControl[0].name}, mantenha ou reduza levemente a carga até voltar para a faixa de reps planejada.`);
+  }
+  suggestions.push('Registre reps reais em cada série: isso deixa o feedback mais preciso a cada treino.');
+
+  return {
+    totalVolume,
+    averageLoad: averageLoad.toFixed(1),
+    averageReps: averageReps.toFixed(1),
+    summary,
+    highlights,
+    suggestions,
+  };
+}
+
+function findPreviousExerciseSession(exercise) {
+  const currentKey = todaySessionKey();
+  const sessions = Object.entries(state.workoutSessions)
+    .filter(([date]) => date < currentKey)
+    .sort(([a], [b]) => b.localeCompare(a));
+
+  for (const [, session] of sessions) {
+    const match = Object.values(session || {}).find((entry) => (
+      entry.exerciseId === exercise.id || entry.exercise === exercise.exercise
+    ));
+    if (match) {
+      const targetReps = estimateTargetReps(match.reps || exercise.reps);
+      const loads = (match.setLoads || []).map(Number).map((value) => (Number.isFinite(value) ? value : 0));
+      const reps = ensureRepsCount(match.actualReps || [], loads.length || match.totalSets || 1, targetReps);
+      const volume = loads.reduce((total, load, index) => total + (load * (reps[index] || targetReps)), 0);
+      return { volume };
+    }
+  }
+
+  return null;
 }
 
 function getSelectedGroups() {
@@ -616,11 +786,18 @@ function getSessionEntry(day, index, workoutItem) {
   const existing = state.workoutSessions[sessionKey]?.[workoutKey];
   const totalSets = parseWorkoutReps(workoutItem.reps).sets;
   const baseLoads = normalizeSetLoads(existing?.setLoads ?? workoutItem.setLoads ?? [], workoutItem.reps);
+  const targetReps = estimateTargetReps(workoutItem.reps);
+  const baseReps = ensureRepsCount(existing?.actualReps ?? [], totalSets, targetReps);
 
   return {
     totalSets,
     completedSets: existing?.completedSets || 0,
     setLoads: ensureLoadCount(baseLoads, totalSets),
+    actualReps: baseReps,
+    exerciseId: workoutItem.id,
+    exercise: workoutItem.exercise,
+    group: workoutItem.group,
+    reps: workoutItem.reps,
   };
 }
 
@@ -642,6 +819,33 @@ function updateWorkoutSetLoad(day, index, setIndex, value) {
     totalSets: current.totalSets,
     completedSets: current.completedSets,
     setLoads: current.setLoads,
+    actualReps: current.actualReps,
+    exerciseId: current.exerciseId,
+    exercise: current.exercise,
+    group: current.group,
+    reps: current.reps,
+  };
+
+  saveState();
+}
+
+function updateWorkoutSetReps(day, index, setIndex, value) {
+  const workout = state.workouts[day]?.exercises?.[index];
+  if (!workout) return;
+
+  const session = ensureTodaySession();
+  const current = getSessionEntry(day, index, workout);
+  current.actualReps[setIndex] = Math.max(0, Number(value) || 0);
+
+  session[`${day}-${index}`] = {
+    totalSets: current.totalSets,
+    completedSets: current.completedSets,
+    setLoads: current.setLoads,
+    actualReps: current.actualReps,
+    exerciseId: current.exerciseId,
+    exercise: current.exercise,
+    group: current.group,
+    reps: current.reps,
   };
 
   saveState();
@@ -657,6 +861,11 @@ function advanceWorkoutSet(day, index) {
     totalSets: current.totalSets,
     completedSets: Math.min(current.completedSets + 1, current.totalSets),
     setLoads: current.setLoads,
+    actualReps: current.actualReps,
+    exerciseId: current.exerciseId,
+    exercise: current.exercise,
+    group: current.group,
+    reps: current.reps,
   };
 
   saveState();
@@ -673,6 +882,11 @@ function undoWorkoutSet(day, index) {
     totalSets: current.totalSets,
     completedSets: Math.max(current.completedSets - 1, 0),
     setLoads: current.setLoads,
+    actualReps: current.actualReps,
+    exerciseId: current.exerciseId,
+    exercise: current.exercise,
+    group: current.group,
+    reps: current.reps,
   };
 
   saveState();
@@ -904,4 +1118,13 @@ function dayName(day) {
 
 function escapeAttribute(value) {
   return String(value ?? '').replace(/"/g, '&quot;');
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
