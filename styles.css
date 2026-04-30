@@ -303,8 +303,8 @@ th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: lef
   grid-template-areas:
     "header load"
     "progress load";
-  gap: 8px 12px;
-  padding: 10px;
+  gap: 10px 12px;
+  padding: 12px;
   background: var(--card);
   transform: translateX(var(--swipe-x));
   transition: transform 0.18s ease;
@@ -331,12 +331,14 @@ th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: lef
 
 .workout-card-header { grid-area: header; }
 .workout-card-footer { display: none; }
+.workout-card-header > div:first-child { min-width: 0; }
 
 .workout-card-header strong {
   display: block;
   margin: 4px 0 2px;
   font-size: 0.98rem;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .chip {
@@ -418,6 +420,7 @@ th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: lef
 
 .active-set-load input {
   width: 68px;
+  max-width: 100%;
   padding: 8px 7px;
   margin: 0;
   text-align: right;
@@ -441,7 +444,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
 .actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
 footer { text-align: center; color: var(--muted); padding: 10px 0 26px; }
 
-@media (max-width: 680px) {
+@media (max-width: 680px) and (min-width: 521px) {
   .workout-card-footer,
   .library-item,
   .library-group-header {
@@ -450,8 +453,8 @@ footer { text-align: center; color: var(--muted); padding: 10px 0 26px; }
   }
 
   .swipe-card-content {
-    grid-template-columns: minmax(0, 1fr) 108px;
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 116px;
+    gap: 10px;
   }
 
   .workout-card-header {
@@ -459,6 +462,61 @@ footer { text-align: center; color: var(--muted); padding: 10px 0 26px; }
   }
 
   .series-badge { align-self: flex-start; }
+  .swipe-hint { max-width: none; }
+}
+
+@media (max-width: 520px) {
+  .section-title {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .section-title .btn {
+    padding: 9px 12px;
+  }
+
+  .workout-card-footer,
+  .library-item,
+  .library-group-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .swipe-card-content {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "load"
+      "progress";
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .workout-card-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .series-badge {
+    align-self: flex-start;
+    padding: 5px 7px;
+    font-size: 0.74rem;
+  }
+
+  .active-set-load {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .active-set-load label {
+    flex: 0 0 auto;
+  }
+
+  .active-set-load input {
+    width: 74px;
+  }
+
   .swipe-hint { max-width: none; }
 }
 
