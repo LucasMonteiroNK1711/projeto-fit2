@@ -176,7 +176,7 @@ select {
 .muted { color: var(--muted); }
 .table-wrap { overflow: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+th, td { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .section-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .row-actions { text-align: right; }
 
@@ -433,15 +433,80 @@ th, td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: lef
   max-width: 260px;
 }
 
-dialog { border: none; border-radius: 16px; width: min(680px, 95%); }
+dialog {
+  border: none;
+  border-radius: 16px;
+  width: min(780px, 95%);
+  padding: 0;
+  background: var(--card);
+  box-shadow: 0 24px 70px var(--shadow);
+}
 #workoutManagerModal { width: min(980px, 96%); }
-.modal-manager { display: grid; gap: 12px; max-height: 80vh; overflow: auto; }
+.modal-manager { display: grid; gap: 12px; max-height: 80vh; overflow: auto; padding: 16px; }
 dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
 .modal-manager,
 .modal-form { color: var(--text); }
-.modal-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-.modal-form h3 { grid-column: 1 / -1; margin: 0; }
-.actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
+.modal-form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  max-height: 86vh;
+  overflow: auto;
+}
+
+.modal-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-form h3 {
+  margin: 4px 0 0;
+  font-size: 1.25rem;
+}
+
+.measure-section {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: rgba(15, 157, 139, 0.03);
+}
+
+.measure-section h4 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.measure-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.measure-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.saved-birthdate {
+  align-self: end;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
 footer { text-align: center; color: var(--muted); padding: 10px 0 26px; }
 
 @media (max-width: 680px) and (min-width: 521px) {
@@ -462,6 +527,7 @@ footer { text-align: center; color: var(--muted); padding: 10px 0 26px; }
   }
 
   .series-badge { align-self: flex-start; }
+  .measure-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .swipe-hint { max-width: none; }
 }
 
@@ -473,6 +539,20 @@ footer { text-align: center; color: var(--muted); padding: 10px 0 26px; }
 
   .section-title .btn {
     padding: 9px 12px;
+  }
+
+  .modal-form {
+    padding: 14px;
+  }
+
+  .measure-grid,
+  .measure-grid.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .workout-card-footer,

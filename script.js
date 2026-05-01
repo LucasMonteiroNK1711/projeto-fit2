@@ -135,9 +135,10 @@ function buildWorkoutFromExercises(exercises, groups) {
 }
 
 function bindEvents() {
-  document.getElementById('openMeasureModal').onclick = () => dom.modal.showModal();
-  document.getElementById('openMeasureModalHeader').onclick = () => dom.modal.showModal();
+  document.getElementById('openMeasureModal').onclick = openMeasureModal;
+  document.getElementById('openMeasureModalHeader').onclick = openMeasureModal;
   document.getElementById('closeModal').onclick = () => dom.modal.close();
+  document.getElementById('cancelMeasureModal').onclick = () => dom.modal.close();
   document.getElementById('openWorkoutManager').onclick = () => dom.workoutManagerModal.showModal();
   document.getElementById('closeWorkoutManager').onclick = () => dom.workoutManagerModal.close();
   dom.themeToggle.onclick = toggleTheme;
@@ -155,6 +156,32 @@ function bindEvents() {
   dom.measureForm.addEventListener('submit', onMeasureSubmit);
   dom.exerciseForm.addEventListener('submit', onExerciseSubmit);
   dom.workoutGeneratorForm.addEventListener('submit', onWorkoutGeneratorSubmit);
+}
+
+function openMeasureModal() {
+  prepareMeasureForm();
+  dom.modal.showModal();
+}
+
+function prepareMeasureForm() {
+  const profile = getMeasureProfile();
+  const today = new Date().toISOString().slice(0, 10);
+  dom.measureForm.date.value = today;
+
+  if (profile.sex) dom.measureForm.sex.value = profile.sex;
+
+  const birthDateField = document.getElementById('birthDateField');
+  const birthDateHint = document.getElementById('birthDateSavedHint');
+  if (profile.birthDate) {
+    dom.measureForm.birthDate.value = profile.birthDate;
+    birthDateField.hidden = true;
+    birthDateHint.hidden = false;
+    birthDateHint.textContent = `Nascimento já salvo: ${formatDate(profile.birthDate)}.`;
+  } else {
+    birthDateField.hidden = false;
+    birthDateHint.hidden = true;
+    birthDateHint.textContent = '';
+  }
 }
 
 function initTheme() {
@@ -180,10 +207,13 @@ function onMeasureSubmit(event) {
   event.preventDefault();
   const form = new FormData(dom.measureForm);
   const entry = Object.fromEntries(form.entries());
+  const profile = getMeasureProfile();
 
-  ['weight', 'height', 'neck', 'waist', 'hip', 'arm', 'leg'].forEach((field) => {
+  ['weight', 'height', 'neck', 'chest', 'waist', 'abdomen', 'hip', 'biceps', 'forearm', 'calf', 'thigh'].forEach((field) => {
     entry[field] = entry[field] ? Number(entry[field]) : null;
   });
+  entry.birthDate = entry.birthDate || profile.birthDate || '';
+  entry.sex = entry.sex || profile.sex || 'male';
 
   state.measures.push(entry);
   state.measures.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -332,7 +362,7 @@ function refreshWorkoutArea() {
 function renderMeasuresTable() {
   dom.measureTableBody.innerHTML = '';
   if (!state.measures.length) {
-    dom.measureTableBody.innerHTML = '<tr><td colspan="9">Nenhuma medida registrada ainda.</td></tr>';
+    dom.measureTableBody.innerHTML = '<tr><td colspan="13">Nenhuma medida registrada ainda.</td></tr>';
     return;
   }
 
@@ -343,10 +373,14 @@ function renderMeasuresTable() {
       <td>${m.weight ?? '-'}</td>
       <td>${m.height ?? '-'}</td>
       <td>${m.neck ?? '-'}</td>
+      <td>${measureValue(m, 'chest')}</td>
       <td>${m.waist ?? '-'}</td>
+      <td>${measureValue(m, 'abdomen')}</td>
       <td>${m.hip ?? '-'}</td>
-      <td>${m.arm ?? '-'}</td>
-      <td>${m.leg ?? '-'}</td>
+      <td>${measureValue(m, 'biceps', 'arm')}</td>
+      <td>${measureValue(m, 'forearm')}</td>
+      <td>${measureValue(m, 'calf')}</td>
+      <td>${measureValue(m, 'thigh', 'leg')}</td>
       <td class="row-actions"><button class="trash-btn" data-measure-index="${index}" title="Excluir medida">🗑</button></td>
     `;
     dom.measureTableBody.appendChild(tr);
@@ -363,6 +397,7 @@ function renderMeasuresTable() {
 
 function renderDashboard() {
   const latest = state.measures.at(-1) || {};
+  const profile = getMeasureProfile();
   const fat = navyBodyFat(latest);
   const bmi = latest.weight && latest.height ? latest.weight / ((latest.height / 100) ** 2) : null;
   const lean = latest.weight && fat != null ? latest.weight * (1 - fat / 100) : null;
@@ -370,7 +405,7 @@ function renderDashboard() {
   setText('kpiWeight', latest.weight ? `${latest.weight} kg` : '-- kg');
   setText('kpiFat', fat != null ? `${fat}%` : '--%');
   setText('kpiHeight', latest.height ? `${latest.height} cm` : '-- cm');
-  setText('kpiAge', calculateAge(latest.birthDate));
+  setText('kpiAge', calculateAge(latest.birthDate || profile.birthDate));
   setText('kpiBmi', bmi ? bmi.toFixed(1) : '--');
   setText('kpiLean', lean ? `${lean.toFixed(1)} kg` : '-- kg');
   setText('bodyFatValue', fat != null ? `${fat}%` : '--%');
@@ -382,6 +417,21 @@ function renderDashboard() {
 
   drawLineChart('weightChart', weightSeries, '#0f9d8b');
   drawLineChart('fatChart', fatSeries, '#4a78d6');
+}
+
+function getMeasureProfile() {
+  const newestWithBirthDate = [...state.measures].reverse().find((measure) => measure.birthDate);
+  const newestWithSex = [...state.measures].reverse().find((measure) => measure.sex);
+
+  return {
+    birthDate: newestWithBirthDate?.birthDate || '',
+    sex: newestWithSex?.sex || '',
+  };
+}
+
+function measureValue(measure, field, fallbackField) {
+  const value = measure[field] ?? (fallbackField ? measure[fallbackField] : null);
+  return value ?? '-';
 }
 
 function renderGroupSelector() {
@@ -814,15 +864,23 @@ function calculateAge(birthDate) {
   return `${years}a ${months}m ${days}d`;
 }
 
-function navyBodyFat({ sex, waist, neck, hip, height }) {
-  if (!waist || !neck || !height) return null;
+function formatDate(date) {
+  if (!date) return '-';
+  const [year, month, day] = String(date).split('-');
+  if (!year || !month || !day) return date;
+  return `${day}/${month}/${year}`;
+}
+
+function navyBodyFat({ sex, waist, abdomen, neck, hip, height }) {
+  const waistForFormula = abdomen || waist;
+  if (!waistForFormula || !neck || !height) return null;
 
   if (sex === 'female') {
     if (!hip) return null;
-    return Number((495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.221 * Math.log10(height)) - 450).toFixed(1));
+    return Number((495 / (1.29579 - 0.35004 * Math.log10(waistForFormula + hip - neck) + 0.221 * Math.log10(height)) - 450).toFixed(1));
   }
 
-  return Number((495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(height)) - 450).toFixed(1));
+  return Number((495 / (1.0324 - 0.19077 * Math.log10(waistForFormula - neck) + 0.15456 * Math.log10(height)) - 450).toFixed(1));
 }
 
 function classifyFat(value) {

@@ -80,10 +80,14 @@
                     <th>Peso</th>
                     <th>Altura</th>
                     <th>Pescoço</th>
+                    <th>Peito</th>
                     <th>Cintura</th>
+                    <th>Abdômen</th>
                     <th>Quadril</th>
-                    <th>Braço</th>
-                    <th>Perna</th>
+                    <th>Bíceps</th>
+                    <th>Antebraço</th>
+                    <th>Panturrilha</th>
+                    <th>Coxa</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -105,28 +109,57 @@
 
     <dialog id="measureModal">
       <form id="measureForm" method="dialog" class="modal-form">
-        <h3>Nova medida</h3>
-        <label>Data
-          <input type="date" name="date" required />
-        </label>
-        <label>Sexo
-          <select name="sex">
-            <option value="male">Masculino</option>
-            <option value="female">Feminino</option>
-          </select>
-        </label>
-        <label>Data de nascimento
-          <input type="date" name="birthDate" />
-        </label>
-        <label>Peso (kg)<input type="number" step="0.1" name="weight" /></label>
-        <label>Altura (cm)<input type="number" step="0.1" name="height" /></label>
-        <label>Pescoço (cm)<input type="number" step="0.1" name="neck" /></label>
-        <label>Cintura (cm)<input type="number" step="0.1" name="waist" /></label>
-        <label>Quadril (cm)<input type="number" step="0.1" name="hip" /></label>
-        <label>Braço (cm)<input type="number" step="0.1" name="arm" /></label>
-        <label>Perna (cm)<input type="number" step="0.1" name="leg" /></label>
+        <div class="modal-heading">
+          <div>
+            <p class="brand">registro corporal</p>
+            <h3>Nova medida</h3>
+          </div>
+          <button type="button" class="icon-btn ghost-btn" id="closeModal" aria-label="Fechar">×</button>
+        </div>
+
+        <section class="measure-section">
+          <h4>Dados gerais</h4>
+          <div class="measure-grid compact">
+            <label>Data
+              <input type="date" name="date" required />
+            </label>
+            <label>Sexo
+              <select name="sex">
+                <option value="male">Masculino</option>
+                <option value="female">Feminino</option>
+              </select>
+            </label>
+            <label id="birthDateField">Data de nascimento
+              <input type="date" name="birthDate" />
+            </label>
+            <p id="birthDateSavedHint" class="saved-birthdate muted"></p>
+          </div>
+        </section>
+
+        <section class="measure-section">
+          <h4>Composição</h4>
+          <div class="measure-grid compact">
+            <label>Peso (kg)<input type="number" step="0.1" name="weight" /></label>
+            <label>Altura (cm)<input type="number" step="0.1" name="height" /></label>
+          </div>
+        </section>
+
+        <section class="measure-section">
+          <h4>Medidas corporais</h4>
+          <div class="measure-grid">
+            <label>Pescoço (cm)<input type="number" step="0.1" name="neck" /></label>
+            <label>Peito (cm)<input type="number" step="0.1" name="chest" /></label>
+            <label>Cintura (cm)<input type="number" step="0.1" name="waist" /></label>
+            <label>Abdômen (cm)<input type="number" step="0.1" name="abdomen" /></label>
+            <label>Quadril (cm)<input type="number" step="0.1" name="hip" /></label>
+            <label>Bíceps (cm)<input type="number" step="0.1" name="biceps" /></label>
+            <label>Antebraço (cm)<input type="number" step="0.1" name="forearm" /></label>
+            <label>Panturrilha (cm)<input type="number" step="0.1" name="calf" /></label>
+            <label>Coxa (cm)<input type="number" step="0.1" name="thigh" /></label>
+          </div>
+        </section>
         <div class="actions">
-          <button type="button" class="btn btn-secondary" id="closeModal">Cancelar</button>
+          <button type="button" class="btn btn-secondary" id="cancelMeasureModal">Cancelar</button>
           <button type="submit" class="btn">Salvar</button>
         </div>
       </form>
