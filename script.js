@@ -42,8 +42,12 @@ const dom = {
   navButtons: document.querySelectorAll('.nav-btn'),
   screenTitle: document.getElementById('screenTitle'),
   modal: document.getElementById('measureModal'),
+  measureHistoryModal: document.getElementById('measureHistoryModal'),
   measureForm: document.getElementById('measureForm'),
   measureTableBody: document.getElementById('measureTableBody'),
+  measureSnapshotDate: document.getElementById('measureSnapshotDate'),
+  bodyMeasureCallouts: document.getElementById('bodyMeasureCallouts'),
+  measureBodyStats: document.getElementById('measureBodyStats'),
   workoutManagerModal: document.getElementById('workoutManagerModal'),
   workoutGeneratorForm: document.getElementById('workoutGeneratorForm'),
   groupSelector: document.getElementById('groupSelector'),
@@ -139,6 +143,8 @@ function bindEvents() {
   document.getElementById('openMeasureModalHeader').onclick = openMeasureModal;
   document.getElementById('closeModal').onclick = () => dom.modal.close();
   document.getElementById('cancelMeasureModal').onclick = () => dom.modal.close();
+  document.getElementById('openMeasureHistory').onclick = () => dom.measureHistoryModal.showModal();
+  document.getElementById('closeMeasureHistory').onclick = () => dom.measureHistoryModal.close();
   document.getElementById('openWorkoutManager').onclick = () => dom.workoutManagerModal.showModal();
   document.getElementById('closeWorkoutManager').onclick = () => dom.workoutManagerModal.close();
   dom.themeToggle.onclick = toggleTheme;
@@ -347,6 +353,7 @@ function parseWorkoutReps(reps) {
 
 function refreshAll() {
   renderMeasuresTable();
+  renderMeasureBody();
   renderDashboard();
   refreshWorkoutArea();
 }
@@ -357,6 +364,58 @@ function refreshWorkoutArea() {
   renderWeekStrip();
   renderWorkoutPlan();
   renderExerciseLibrary();
+}
+
+function renderMeasureBody() {
+  const latest = state.measures.at(-1);
+  const callouts = [
+    { label: 'Pescoço', field: 'neck', x: 54, y: 17, side: 'right' },
+    { label: 'Peito', field: 'chest', x: 56, y: 30, side: 'right' },
+    { label: 'Bíceps', field: 'biceps', fallback: 'arm', x: 45, y: 34, side: 'left' },
+    { label: 'Antebraço', field: 'forearm', x: 44, y: 47, side: 'left' },
+    { label: 'Cintura', field: 'waist', x: 57, y: 43, side: 'right' },
+    { label: 'Abdômen', field: 'abdomen', x: 58, y: 51, side: 'right' },
+    { label: 'Quadril', field: 'hip', x: 57, y: 60, side: 'right' },
+    { label: 'Coxa', field: 'thigh', fallback: 'leg', x: 45, y: 70, side: 'left' },
+    { label: 'Panturrilha', field: 'calf', x: 65, y: 84, side: 'right' },
+  ];
+
+  dom.measureSnapshotDate.textContent = latest
+    ? `Última atualização: ${formatDate(latest.date)}`
+    : 'Nenhuma medida registrada ainda.';
+
+  dom.bodyMeasureCallouts.innerHTML = callouts.map((item) => {
+    const value = latest ? measureValue(latest, item.field, item.fallback) : '-';
+    return `
+      <div class="body-callout ${item.side}" style="left:${item.x}%; top:${item.y}%">
+        <span class="callout-dot"></span>
+        <span class="callout-line"></span>
+        <strong>${item.label}</strong>
+        <small>${formatMeasureValue(value)}</small>
+      </div>
+    `;
+  }).join('');
+
+  if (!latest) {
+    dom.measureBodyStats.innerHTML = '<p class="muted">Atualize suas medidas para preencher o mapa corporal.</p>';
+    return;
+  }
+
+  const fat = navyBodyFat(latest);
+  const bmi = latest.weight && latest.height ? latest.weight / ((latest.height / 100) ** 2) : null;
+  const summary = [
+    { label: 'Peso', value: latest.weight ? `${latest.weight} kg` : '--' },
+    { label: 'Altura', value: latest.height ? `${latest.height} cm` : '--' },
+    { label: 'IMC', value: bmi ? bmi.toFixed(1) : '--' },
+    { label: '% gordura', value: fat != null ? `${fat}%` : '--' },
+  ];
+
+  dom.measureBodyStats.innerHTML = summary.map((item) => `
+    <article>
+      <span>${item.label}</span>
+      <strong>${item.value}</strong>
+    </article>
+  `).join('');
 }
 
 function renderMeasuresTable() {
@@ -432,6 +491,10 @@ function getMeasureProfile() {
 function measureValue(measure, field, fallbackField) {
   const value = measure[field] ?? (fallbackField ? measure[fallbackField] : null);
   return value ?? '-';
+}
+
+function formatMeasureValue(value) {
+  return value === '-' || value == null ? '--' : `${value} cm`;
 }
 
 function renderGroupSelector() {

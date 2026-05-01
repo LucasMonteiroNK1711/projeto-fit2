@@ -67,32 +67,38 @@
         </section>
 
         <section id="medidas" class="screen">
-          <div class="card">
+          <div class="card measure-body-card">
             <div class="section-title">
-              <h2>Histórico de medidas</h2>
-              <button id="openMeasureModal" class="btn">Atualizar medidas</button>
+              <div>
+                <h2>Medidas atuais</h2>
+                <p class="muted" id="measureSnapshotDate">Nenhuma medida registrada ainda.</p>
+              </div>
+              <div class="button-group">
+                <button id="openMeasureHistory" class="btn btn-secondary">Histórico</button>
+                <button id="openMeasureModal" class="btn">Atualizar medidas</button>
+              </div>
             </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Data</th>
-                    <th>Peso</th>
-                    <th>Altura</th>
-                    <th>Pescoço</th>
-                    <th>Peito</th>
-                    <th>Cintura</th>
-                    <th>Abdômen</th>
-                    <th>Quadril</th>
-                    <th>Bíceps</th>
-                    <th>Antebraço</th>
-                    <th>Panturrilha</th>
-                    <th>Coxa</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="measureTableBody"></tbody>
-              </table>
+
+            <div class="body-measure-layout">
+              <div class="body-figure-wrap" aria-label="Mapa visual das medidas corporais">
+                <svg class="body-figure" viewBox="0 0 220 420" role="img" aria-label="Ilustração corporal">
+                  <circle cx="110" cy="42" r="28" class="figure-fill" />
+                  <path class="figure-fill" d="M78 84 Q110 66 142 84 L154 206 Q136 222 124 206 L118 145 L102 145 L96 206 Q84 222 66 206 Z" />
+                  <path class="figure-fill" d="M76 92 L38 180 Q34 191 44 197 Q55 202 61 191 L86 126 Z" />
+                  <path class="figure-fill" d="M144 92 L182 180 Q186 191 176 197 Q165 202 159 191 L134 126 Z" />
+                  <path class="figure-fill" d="M94 206 L78 366 Q76 382 91 384 Q105 385 108 369 L112 250 L116 250 L122 369 Q125 385 139 384 Q154 382 152 366 L136 206 Z" />
+                  <path class="figure-line" d="M87 86 Q110 98 133 86" />
+                  <path class="figure-line" d="M80 142 Q110 154 140 142" />
+                  <path class="figure-line" d="M78 176 Q110 188 142 176" />
+                  <path class="figure-line" d="M73 215 Q110 230 147 215" />
+                </svg>
+                <div id="bodyMeasureCallouts" class="body-callouts"></div>
+              </div>
+
+              <div class="measure-summary-panel">
+                <h3>Resumo</h3>
+                <div id="measureBodyStats" class="measure-stat-grid"></div>
+              </div>
             </div>
           </div>
         </section>
@@ -163,6 +169,40 @@
           <button type="submit" class="btn">Salvar</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="measureHistoryModal">
+      <div class="modal-manager">
+        <div class="section-title">
+          <div>
+            <p class="brand">linha do tempo</p>
+            <h3>Histórico de medidas</h3>
+          </div>
+          <button class="btn btn-secondary" id="closeMeasureHistory">Fechar</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Peso</th>
+                <th>Altura</th>
+                <th>Pescoço</th>
+                <th>Peito</th>
+                <th>Cintura</th>
+                <th>Abdômen</th>
+                <th>Quadril</th>
+                <th>Bíceps</th>
+                <th>Antebraço</th>
+                <th>Panturrilha</th>
+                <th>Coxa</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="measureTableBody"></tbody>
+          </table>
+        </div>
+      </div>
     </dialog>
 
     <dialog id="workoutManagerModal">
