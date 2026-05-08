@@ -141,6 +141,7 @@ function buildWorkoutFromExercises(exercises, groups) {
 function bindEvents() {
   document.getElementById('openMeasureModal').onclick = openMeasureModal;
   document.getElementById('openMeasureModalHeader').onclick = openMeasureModal;
+  document.getElementById('openMeasureModalHero').onclick = openMeasureModal;
   document.getElementById('closeModal').onclick = () => dom.modal.close();
   document.getElementById('cancelMeasureModal').onclick = () => dom.modal.close();
   document.getElementById('openMeasureHistory').onclick = () => dom.measureHistoryModal.showModal();
@@ -151,17 +152,29 @@ function bindEvents() {
 
   dom.navButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      dom.navButtons.forEach((b) => b.classList.remove('active'));
-      dom.screens.forEach((s) => s.classList.remove('active'));
-      button.classList.add('active');
-      document.getElementById(button.dataset.target).classList.add('active');
-      dom.screenTitle.textContent = button.textContent;
+      activateScreen(button.dataset.target);
     });
+  });
+
+  document.querySelectorAll('[data-jump-target]').forEach((button) => {
+    button.addEventListener('click', () => activateScreen(button.dataset.jumpTarget));
   });
 
   dom.measureForm.addEventListener('submit', onMeasureSubmit);
   dom.exerciseForm.addEventListener('submit', onExerciseSubmit);
   dom.workoutGeneratorForm.addEventListener('submit', onWorkoutGeneratorSubmit);
+}
+
+function activateScreen(target) {
+  const button = document.querySelector(`.nav-btn[data-target="${target}"]`);
+  const screen = document.getElementById(target);
+  if (!button || !screen) return;
+
+  dom.navButtons.forEach((item) => item.classList.remove('active'));
+  dom.screens.forEach((item) => item.classList.remove('active'));
+  button.classList.add('active');
+  screen.classList.add('active');
+  dom.screenTitle.textContent = button.textContent;
 }
 
 function openMeasureModal() {
@@ -474,8 +487,8 @@ function renderDashboard() {
   const weightSeries = state.measures.filter((m) => m.weight != null).map((m) => ({ x: m.date?.slice(5), y: m.weight }));
   const fatSeries = state.measures.map((m) => ({ x: m.date?.slice(5), y: navyBodyFat(m) })).filter((m) => m.y != null);
 
-  drawLineChart('weightChart', weightSeries, '#0f9d8b');
-  drawLineChart('fatChart', fatSeries, '#4a78d6');
+  drawLineChart('weightChart', weightSeries, getCssVar('--primary'));
+  drawLineChart('fatChart', fatSeries, getCssVar('--accent-blue'));
 }
 
 function getMeasureProfile() {
